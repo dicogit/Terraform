@@ -8,7 +8,6 @@ pipeline {
             }
             steps {
                 script {
-                    dir ("terraform") {
                         sh "terraform init"
                         sh "terraform plan"
                         EC2_PUBLIC_IP=sh(returnStdout: true, script: "terraform output ectype").trim()
