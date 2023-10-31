@@ -3,11 +3,11 @@ pipeline {
     tools {
         maven 'slave'
     }
-    environment {
-        remote1="ec2-user@3.110.208.200"
+    //environment {
+    //    remote1="ec2-user@3.110.208.200"
         //remote2="ec2-user@43.204.107.107"
-        REPONAME='devopsdr/pvt'
-    }
+    //    REPONAME='devopsdr/pvt'
+    //}
     parameters {
         string (name:'Env', defaultValue:'Linux', description:'Linux Env')
         booleanParam(name:'polar', defaultValue:true, description:'conditional')
@@ -40,25 +40,25 @@ pipeline {
                 }
             }
         }
-        stage ('PACKAGE') {
-            steps {
-                sshagent(['remoteuser']) {
-                    script {
-                        echo "PACKAGE STAGE at ${params.Env}"
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'dpwd', usernameVariable: 'docr')]) {
-                            sh "scp -o StrictHostKeyChecking=no server_cfg.sh ${remote1}:/home/ec2-user/"
-                            sh "ssh -o StrictHostKeyChecking=no ${remote1} 'bash ~/server_cfg.sh ${REPONAME} ${BUILD_NUMBER}'"
-                            sh "ssh -o StrictHostKeyChecking=no ${remote1} 'sudo docker login -u ${docr} -p ${dpwd}'"
-                            sh "ssh -o StrictHostKeyChecking=no ${remote1} 'sudo docker push ${REPONAME}:${BUILD_NUMBER}'"
+        //stage ('PACKAGE') {
+        //    steps {
+        //        sshagent(['remoteuser']) {
+        //           script {
+        //                echo "PACKAGE STAGE at ${params.Env}"
+        //                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'dpwd', usernameVariable: 'docr')]) {
+        //                    sh "scp -o StrictHostKeyChecking=no server_cfg.sh ${remote1}:/home/ec2-user/"
+        //                    sh "ssh -o StrictHostKeyChecking=no ${remote1} 'bash ~/server_cfg.sh ${REPONAME} ${BUILD_NUMBER}'"
+        //                   sh "ssh -o StrictHostKeyChecking=no ${remote1} 'sudo docker login -u ${docr} -p ${dpwd}'"
+        //                    sh "ssh -o StrictHostKeyChecking=no ${remote1} 'sudo docker push ${REPONAME}:${BUILD_NUMBER}'"
     
-                        }
+        //                }
                                     
-                    }
+        //            }
 
-                }
+        //        }
                 
-            }
-        }
+        //    }
+        //}
         stage ("TF Creating EC2") {
             environment {
                 AWS_ACCESS_KEY_ID=credentials("AWS_ACCESS_KEY_ID")
@@ -68,40 +68,40 @@ pipeline {
                 script {
                     dir ("terraform") {
                         sh "terraform init"
-                        sh "terraform apply --auto-approve"
+                        sh "terraform plan"
                         EC2_PUBLIC_IP=sh(returnStdout: true, script: "terraform output ectype").trim()
                         echo "EC2_PUBLIC_IP: '${EC2_PUBLIC_IP}'"
                     }
                 }
             }
         }
-        stage ('DEPLOY') {
-            input {
-                message 'Run Addressbook Application'
-                ok 'Approved'
-                parameters {
-                    choice(name:'Version', choices:['V1','V2','V3'])
-                }
-            }
-            steps {
-                sshagent(['remoteuser']) {
-                    script {
-                        echo "DEPLOY STAGE at ${params.Env}"
-                        withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'dpwd', usernameVariable: 'docr')]) { 
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo yum install docker -y'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo systemctl start docker'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo docker login -u ${docr} -p ${dpwd}'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo docker pull ${REPONAME}:${BUILD_NUMBER}'"
-                            sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo docker run -itd -P ${REPONAME}:${BUILD_NUMBER}'"
+       // stage ('DEPLOY') {
+        //    input {
+        //        message 'Run Addressbook Application'
+        //        ok 'Approved'
+        //        parameters {
+        //            choice(name:'Version', choices:['V1','V2','V3'])
+        //        }
+        //    }
+        //    steps {
+        //        sshagent(['remoteuser']) {
+        //            script {
+        //                echo "DEPLOY STAGE at ${params.Env}"
+        //                withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'dpwd', usernameVariable: 'docr')]) { 
+        //                    sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo yum install docker -y'"
+        //                    sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo systemctl start docker'"
+        //                   sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo docker login -u ${docr} -p ${dpwd}'"
+        //                    sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo docker pull ${REPONAME}:${BUILD_NUMBER}'"
+        //                    sh "ssh -o StrictHostKeyChecking=no ec2-user@${EC2_PUBLIC_IP} 'sudo docker run -itd -P ${REPONAME}:${BUILD_NUMBER}'"
 
-                        }
+        //                }
                         
-                    }
+        //            }
 
-                }
+        //        }
                 
-            }
-        }
+        //    }
+        //}
     }
     
 }
