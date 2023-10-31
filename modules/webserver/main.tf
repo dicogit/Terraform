@@ -49,7 +49,7 @@ resource "aws_security_group" "tfsg" {
 }
 
 resource "aws_instance" "tfweb" {
-  count=1
+  #count=1
   ami = data.aws_ami.tfami.id
   instance_type = var.instance_type
   associate_public_ip_address = true
@@ -58,6 +58,6 @@ resource "aws_instance" "tfweb" {
   key_name = "devops"
   user_data = file("userdata_script.sh")
   tags = {
-    Name = "${var.env}-${count.index}"
+    Name = "${var.env}"
   }  
 }
